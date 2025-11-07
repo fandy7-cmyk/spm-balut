@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SPM Kesehatan - Banggai Laut</title>
+  <link rel="icon" type="image/png" href="favicon.png">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Poppins', sans-serif;
+      color: white;
+      text-align: center;
+      position: relative;
+      z-index: 0;
+    }
+
+    /* Background blur */
+    body::before {
+      content: "";
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: url("balut.jpg") no-repeat center center fixed;
+      background-size: cover;
+      filter: blur(6px);   /* ubah angka sesuai tingkat blur */
+      z-index: -1;
+    }
+
+    .logo-container {
+      margin-top: 20px;
+      display: flex; justify-content: center; gap: 20px; flex-wrap: wrap;
+    }
+    .logo { width: 100px; }
+
+    .links {
+      margin-top: 10px;
+      display: flex; flex-direction: column; align-items: center; gap: 15px;
+    }
+    
+    #mainTitle {
+      margin-bottom: 10px; /* tambahkan jarak di bawah judul */
+      font-size: 28px;     /* opsional, buat ukuran konsisten */
+    }
+    
+    #subTitle {
+      margin-top: 0;
+      margin-bottom: 25px; /* atur jarak ke elemen berikutnya */
+      font-size: 18px;     /* opsional */
+    }
+
+    .link-btn {
+      background: rgba(71, 145, 163, 0.9);
+      width: 450px;        /* lebar seragam */
+      height: 50px;        /* tinggi seragam */
+      display: flex;       /* agar teks di tengah */
+      align-items: center; 
+      justify-content: center;
+      border-radius: 14px;
+      text-decoration: none;
+      color: white;
+      font-weight: 600;
+      transition: all 0.3s ease;
+    }
+
+    .link-btn:hover { background: rgba(228, 222, 222, 0.3); transform: translateY(-2px); }
+    .link-btn.disabled { opacity: 0.4; pointer-events: none; }
+    .timer-container { margin-top: 20px; }
+    .expired-message { color: #ff6b6b; font-weight: 600; }
+    .admin-login-btn {
+      position: fixed; top: 20px; right: 20px;
+      background: rgba(255,255,255,0.2);
+      border: none; padding: 8px 15px; border-radius: 20px;
+      color: white; cursor: pointer; transition: all 0.3s ease;
+    }
+    .admin-login-btn:hover { background: rgba(255,255,255,0.35); }
+    .admin-panel {
+      display: none; position: fixed; top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0,0,0,0.85);
+      backdrop-filter: blur(6px);
+      padding: 20px; overflow-y: auto;
+      animation: fadeIn 0.4s ease forwards;
+      z-index: 100;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .admin-form {
+      background: #222;
+      padding: 25px; max-width: 600px;
+      margin: auto;
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+    }
+    .admin-form h2 { margin-bottom: 20px; color: #fff; }
+    .admin-form input, .admin-form textarea {
+      width: 100%; padding: 10px;
+      border-radius: 6px; border: 1px solid #444;
+      background: #333; color: white;
+      font-size: 14px; margin-bottom: 15px;
+      transition: all 0.3s ease;
+    }
+    .admin-form input:focus, .admin-form textarea:focus {
+      border-color: #4CAF50;
+      outline: none;
+      box-shadow: 0 0 5px rgba(76,175,80,0.5);
+    }
+    .admin-form button {
+      padding: 10px 16px;
+      border-radius: 6px;
+      border: none; cursor: pointer;
+      font-weight: 600; transition: all 0.3s ease;
+    }
+    .admin-form button:hover { opacity: 0.85; }
+    .btn-primary { background: #4CAF50; color: white; }
+    .btn-secondary { background: #f44336; color: white; }
+    .hidden { display: none; }
+  </style>
+</head>
+<body>
+  <button class="admin-login-btn" id="adminLoginBtn">ADMIN</button>
+
+  <div class="logo-container">
+    <img src="logo1.png" class="logo">
+    <img src="logo2.png" class="logo">
+  </div>
+
+  <h1 id="mainTitle"></h1>
+  <p id="subTitle"></p>
+
+  <div class="timer-container">
+    <div id="timerStatus"></div>
+    <div id="countdown"></div>
+    <div id="expiredMessage" class="expired-message" style="display:none;">
+      WAKTU PENGINPUTAN TELAH BERAKHIR
+    </div>
+  </div>
+
+  <div class="links">
+    <a id="report1" class="link-btn" target="_blank"><span class="btn-text"></span></a>
+    <a id="report2" class="link-btn" target="_blank"><span class="btn-text"></span></a>
+    <a id="report3" class="link-btn" target="_blank"><span class="btn-text"></span></a>
+  </div>
+
+  <div class="admin-panel" id="adminPanel">
+    <div class="admin-form" id="loginForm">
+      <h2>Login Admin</h2>
+      <input type="text" id="username" placeholder="Username">
+      <input type="password" id="password" placeholder="Password">
+      <button id="loginBtn" class="btn-primary">Login</button>
+      <button onclick="closeAdmin()" class="btn-secondary">Batal</button>
+    </div>
+  <div class="admin-form hidden" id="adminControlPanel">
+  <h2>Panel Admin</h2>
+  <input id="mainTitleInput" placeholder="Judul">
+  <textarea id="subTitleInput" placeholder="Subjudul"></textarea>
+  <label>Start Time</label>
+  <input type="datetime-local" id="startTimeInput">
+  <label>End Time</label>
+  <input type="datetime-local" id="endTimeInput">
+  <label>Tombol 1</label>
+  <input id="btn1Text" placeholder="Teks">
+  <input id="btn1Link" placeholder="Link">
+  <label>Tombol 2</label>
+  <input id="btn2Text" placeholder="Teks">
+  <input id="btn2Link" placeholder="Link">
+  <label>Tombol 3</label>
+  <input id="btn3Text" placeholder="Teks">
+  <input id="btn3Link" placeholder="Link">
+  <button id="saveSettingsBtn" class="btn-primary">Simpan</button>
+  <button onclick="logout()" class="btn-secondary">Logout</button>
+  <button onclick="closeAdmin()" class="btn-secondary">Kembali ke Halaman Awal</button>
+</div>
+
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
+    import { getDatabase, ref, get, set } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyB_tUKBS3KR8645AEoZxUhOhQ09WLEuw5s",
+      authDomain: "spm-dinkesbalut.firebaseapp.com",
+      databaseURL: "https://spm-dinkesbalut-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "spm-dinkesbalut",
+      storageBucket: "spm-dinkesbalut.firebasestorage.app",
+      messagingSenderId: "673218119261",
+      appId: "1:673218119261:web:a2f85bad72528b607c6fb4",
+      measurementId: "G-8TGKNSK506"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    let settings = {};
+
+    async function loadSettings() {
+      const snapshot = await get(ref(db, "settings"));
+      if (snapshot.exists()) {
+        settings = snapshot.val();
+        applySettings();
+      }
+    }
+
+    function applySettings() {
+      document.getElementById("mainTitle").textContent = settings.mainTitle;
+      document.getElementById("subTitle").innerHTML = settings.subTitle;
+      document.querySelector("#report1 .btn-text").textContent = settings.buttonTexts[0];
+      document.querySelector("#report2 .btn-text").textContent = settings.buttonTexts[1];
+      document.querySelector("#report3 .btn-text").textContent = settings.buttonTexts[2];
+      document.getElementById("report1").href = settings.buttonLinks[0];
+      document.getElementById("report2").href = settings.buttonLinks[1];
+      document.getElementById("report3").href = settings.buttonLinks[2];
+      startCountdown();
+    }
+
+    function startCountdown() {
+      const start = settings.startTime;
+      const end = settings.endTime;
+      const statusEl = document.getElementById("timerStatus");
+      const countdownEl = document.getElementById("countdown");
+      const expiredEl = document.getElementById("expiredMessage");
+      const buttons = document.querySelectorAll(".link-btn");
+
+      clearInterval(window.countdownInterval);
+      window.countdownInterval = setInterval(() => {
+        const now = Date.now();
+        if (now < start) {
+          statusEl.textContent = "BELUM DIMULAI";
+          countdownEl.textContent = formatTime(start - now);
+          buttons.forEach(b => b.classList.add("disabled"));
+          expiredEl.style.display = "none";
+        } else if (now >= start && now <= end) {
+          statusEl.textContent = "SEDANG BERLANGSUNG";
+          countdownEl.textContent = formatTime(end - now);
+          buttons.forEach(b => b.classList.remove("disabled"));
+          expiredEl.style.display = "none";
+        } else {
+          statusEl.textContent = "SUDAH BERAKHIR";
+          countdownEl.textContent = "";
+          buttons.forEach(b => b.classList.add("disabled"));
+          expiredEl.style.display = "block";
+        }
+      }, 1000);
+    }
+
+    function formatTime(ms) {
+      const d = Math.floor(ms / (1000*60*60*24));
+      const h = Math.floor((ms % (1000*60*60*24))/(1000*60*60));
+      const m = Math.floor((ms % (1000*60*60))/(1000*60));
+      const s = Math.floor((ms % (1000*60))/1000);
+      return `${d}d ${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+    }
+
+    document.getElementById("adminLoginBtn").onclick = () => {
+      document.getElementById("adminPanel").style.display = "block";
+    };
+    document.getElementById("loginBtn").onclick = () => {
+      if (username.value === "admin" && password.value === "admin123") {
+        document.getElementById("loginForm").classList.add("hidden");
+        document.getElementById("adminControlPanel").classList.remove("hidden");
+        document.getElementById("mainTitleInput").value = settings.mainTitle;
+        document.getElementById("subTitleInput").value = settings.subTitle;
+        if (settings.startTime) {
+          document.getElementById("startTimeInput").value = new Date(settings.startTime).toISOString().slice(0, 16);
+        }
+        if (settings.endTime) {
+          document.getElementById("endTimeInput").value = new Date(settings.endTime).toISOString().slice(0, 16);
+        }
+        document.getElementById("btn1Text").value = settings.buttonTexts[0];
+        document.getElementById("btn1Link").value = settings.buttonLinks[0];
+        document.getElementById("btn2Text").value = settings.buttonTexts[1];
+        document.getElementById("btn2Link").value = settings.buttonLinks[1];
+        document.getElementById("btn3Text").value = settings.buttonTexts[2];
+        document.getElementById("btn3Link").value = settings.buttonLinks[2];
+      } else {
+        alert("Login salah");
+      }
+    };
+    window.closeAdmin = () => {
+      document.getElementById("adminPanel").style.display = "none";
+    };
+    window.logout = () => {
+      document.getElementById("loginForm").classList.remove("hidden");
+      document.getElementById("adminControlPanel").classList.add("hidden");
+    };
+    document.getElementById("saveSettingsBtn").onclick = async () => {
+      const newStart = new Date(document.getElementById("startTimeInput").value).getTime();
+      const newEnd = new Date(document.getElementById("endTimeInput").value).getTime();
+
+      const newSettings = {
+        mainTitle: document.getElementById("mainTitleInput").value,
+        subTitle: document.getElementById("subTitleInput").value,
+        startTime: newStart,
+        endTime: newEnd,
+        buttonTexts: [
+          document.getElementById("btn1Text").value,
+          document.getElementById("btn2Text").value,
+          document.getElementById("btn3Text").value
+        ],
+        buttonLinks: [
+          document.getElementById("btn1Link").value,
+          document.getElementById("btn2Link").value,
+          document.getElementById("btn3Link").value
+        ]
+      };
+
+      if (JSON.stringify(settings) === JSON.stringify(newSettings)) {
+        alert("Tidak ada perubahan yang disimpan.");
+        return;
+      }
+
+      await set(ref(db, "settings"), newSettings);
+      settings = newSettings;
+      applySettings();
+      alert("Tersimpan!");
+    };
+    loadSettings();
+  </script>
+</body>
+</html>
