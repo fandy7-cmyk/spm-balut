@@ -202,7 +202,7 @@
 
     let settings = {};
 
-    // Fungsi hash sederhana untuk password (bisa diganti dengan yang lebih kuat)
+    // Fungsi hash sederhana untuk password
     function simpleHash(str) {
       let hash = 0;
       for (let i = 0; i < str.length; i++) {
@@ -213,12 +213,11 @@
       return hash.toString(16);
     }
 
-    // Kredensial yang di-hash (tidak terlihat langsung di kode)
+    // Kredensial yang di-hash
     const VALID_CREDENTIALS = {
-      // Username: admin, Password: admin123
-      // Hash di-generate dengan: simpleHash("admin" + ":" + "admin123")
-      // Anda bisa generate hash baru dengan console.log(simpleHash("username:password"))
-      hashedCredential: "1e4c8f" // Contoh hash untuk "admin:admin123"
+      // Hash untuk "admin:perencanaan01#"
+      // GANTI NILAI INI dengan hasil dari console
+      hashedCredential: "MASUKKAN_HASH_DISINI" // <-- GANTI INI!
     };
 
     // Fungsi untuk verifikasi login
@@ -287,17 +286,14 @@
       return `${d}d ${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
     }
 
-    // Fungsi untuk mengonversi input datetime-local ke timestamp WITA (UTC+8)
     function convertToWITATimestamp(dateTimeString) {
       if (!dateTimeString) return 0;
       
       try {
-        // Parse tanggal dan waktu dari input (format: YYYY-MM-DDTHH:mm)
         const [datePart, timePart] = dateTimeString.split('T');
         const [year, month, day] = datePart.split('-').map(Number);
         const [hours, minutes] = timePart.split(':').map(Number);
         
-        // Buat tanggal di timezone WITA (UTC+8)
         const utcDate = new Date(Date.UTC(year, month - 1, day, hours - 8, minutes));
         
         return utcDate.getTime();
@@ -307,15 +303,12 @@
       }
     }
 
-    // Fungsi untuk mengonversi timestamp ke string datetime-local untuk form
     function convertToLocalDateTimeString(timestamp) {
       if (!timestamp || timestamp === 0) return "";
       
-      // Tambah 8 jam untuk menyesuaikan dengan WITA
       const date = new Date(timestamp);
       const witaDate = new Date(date.getTime() + (8 * 60 * 60 * 1000));
       
-      // Format ke YYYY-MM-DDTHH:mm
       const year = witaDate.getUTCFullYear();
       const month = String(witaDate.getUTCMonth() + 1).padStart(2, '0');
       const day = String(witaDate.getUTCDate()).padStart(2, '0');
@@ -350,14 +343,10 @@
         document.getElementById("loginForm").classList.add("hidden");
         document.getElementById("adminControlPanel").classList.remove("hidden");
         
-        // Isi form dengan data yang ada
         document.getElementById("mainTitleInput").value = settings.mainTitle || "";
         document.getElementById("subTitleInput").value = settings.subTitle || "";
-        
-        // Konversi timestamp ke string untuk form
         document.getElementById("startTimeInput").value = convertToLocalDateTimeString(settings.startTime);
         document.getElementById("endTimeInput").value = convertToLocalDateTimeString(settings.endTime);
-        
         document.getElementById("btn1Text").value = settings.buttonTexts?.[0] || "";
         document.getElementById("btn1Link").value = settings.buttonLinks?.[0] || "";
         document.getElementById("btn2Text").value = settings.buttonTexts?.[1] || "";
@@ -367,13 +356,11 @@
       } else {
         loginError.textContent = "Username atau password salah";
         loginError.style.display = "block";
-        // Clear password field
         document.getElementById("password").value = "";
         document.getElementById("password").focus();
       }
     };
 
-    // Handle Enter key in login form
     document.getElementById("password").addEventListener("keypress", (e) => {
       if (e.key === "Enter") {
         document.getElementById("loginBtn").click();
@@ -396,11 +383,9 @@
     };
 
     document.getElementById("saveSettingsBtn").onclick = async () => {
-      // Konversi input ke timestamp WITA
       const newStartTime = convertToWITATimestamp(document.getElementById("startTimeInput").value);
       const newEndTime = convertToWITATimestamp(document.getElementById("endTimeInput").value);
       
-      // Validasi waktu
       if (newStartTime && newEndTime && newStartTime >= newEndTime) {
         alert("Waktu mulai harus lebih awal dari waktu berakhir!");
         return;
@@ -423,7 +408,6 @@
         ]
       };
 
-      // Cek apakah ada perubahan
       const oldSettings = {
         ...settings,
         startTime: settings.startTime || 0,
@@ -447,10 +431,8 @@
       }
     };
 
-    // Load settings saat halaman dimuat
     loadSettings();
     
-    // Tambah handler untuk menutup panel admin dengan ESC
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape' && document.getElementById("adminPanel").style.display === "block") {
         closeAdmin();
