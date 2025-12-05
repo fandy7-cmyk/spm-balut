@@ -153,28 +153,28 @@
       <button id="loginBtn" class="btn-primary">Login</button>
       <button onclick="closeAdmin()" class="btn-secondary">Batal</button>
     </div>
-  <div class="admin-form hidden" id="adminControlPanel">
-  <h2>Panel Admin</h2>
-  <input id="mainTitleInput" placeholder="Judul">
-  <textarea id="subTitleInput" placeholder="Subjudul"></textarea>
-  <label>Start Time</label>
-  <input type="datetime-local" id="startTimeInput">
-  <label>End Time</label>
-  <input type="datetime-local" id="endTimeInput">
-  <label>Tombol 1</label>
-  <input id="btn1Text" placeholder="Teks">
-  <input id="btn1Link" placeholder="Link">
-  <label>Tombol 2</label>
-  <input id="btn2Text" placeholder="Teks">
-  <input id="btn2Link" placeholder="Link">
-  <label>Tombol 3</label>
-  <input id="btn3Text" placeholder="Teks">
-  <input id="btn3Link" placeholder="Link">
-  <button id="saveSettingsBtn" class="btn-primary">Simpan</button>
-  <button onclick="logout()" class="btn-secondary">Logout</button>
-  <button onclick="closeAdmin()" class="btn-secondary">Kembali ke Halaman Awal</button>
-</div>
-
+    <div class="admin-form hidden" id="adminControlPanel">
+      <h2>Panel Admin</h2>
+      <input id="mainTitleInput" placeholder="Judul">
+      <textarea id="subTitleInput" placeholder="Subjudul"></textarea>
+      <label>Start Time (WITA - UTC+8)</label>
+      <input type="datetime-local" id="startTimeInput">
+      <label>End Time (WITA - UTC+8)</label>
+      <input type="datetime-local" id="endTimeInput">
+      <label>Tombol 1</label>
+      <input id="btn1Text" placeholder="Teks">
+      <input id="btn1Link" placeholder="Link">
+      <label>Tombol 2</label>
+      <input id="btn2Text" placeholder="Teks">
+      <input id="btn2Link" placeholder="Link">
+      <label>Tombol 3</label>
+      <input id="btn3Text" placeholder="Teks">
+      <input id="btn3Link" placeholder="Link">
+      <button id="saveSettingsBtn" class="btn-primary">Simpan</button>
+      <button onclick="logout()" class="btn-secondary">Logout</button>
+      <button onclick="closeAdmin()" class="btn-secondary">Kembali ke Halaman Awal</button>
+    </div>
+  </div>
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
@@ -205,20 +205,20 @@
     }
 
     function applySettings() {
-      document.getElementById("mainTitle").textContent = settings.mainTitle;
-      document.getElementById("subTitle").innerHTML = settings.subTitle;
-      document.querySelector("#report1 .btn-text").textContent = settings.buttonTexts[0];
-      document.querySelector("#report2 .btn-text").textContent = settings.buttonTexts[1];
-      document.querySelector("#report3 .btn-text").textContent = settings.buttonTexts[2];
-      document.getElementById("report1").href = settings.buttonLinks[0];
-      document.getElementById("report2").href = settings.buttonLinks[1];
-      document.getElementById("report3").href = settings.buttonLinks[2];
+      document.getElementById("mainTitle").textContent = settings.mainTitle || "SPM Kesehatan - Banggai Laut";
+      document.getElementById("subTitle").innerHTML = settings.subTitle || "Pelaporan Bulanan";
+      document.querySelector("#report1 .btn-text").textContent = settings.buttonTexts?.[0] || "Laporan 1";
+      document.querySelector("#report2 .btn-text").textContent = settings.buttonTexts?.[1] || "Laporan 2";
+      document.querySelector("#report3 .btn-text").textContent = settings.buttonTexts?.[2] || "Laporan 3";
+      document.getElementById("report1").href = settings.buttonLinks?.[0] || "#";
+      document.getElementById("report2").href = settings.buttonLinks?.[1] || "#";
+      document.getElementById("report3").href = settings.buttonLinks?.[2] || "#";
       startCountdown();
     }
 
     function startCountdown() {
-      const start = settings.startTime;
-      const end = settings.endTime;
+      const start = settings.startTime || 0;
+      const end = settings.endTime || 0;
       const statusEl = document.getElementById("timerStatus");
       const countdownEl = document.getElementById("countdown");
       const expiredEl = document.getElementById("expiredMessage");
@@ -247,6 +247,7 @@
     }
 
     function formatTime(ms) {
+      if (ms <= 0) return "00:00:00";
       const d = Math.floor(ms / (1000*60*60*24));
       const h = Math.floor((ms % (1000*60*60*24))/(1000*60*60));
       const m = Math.floor((ms % (1000*60*60))/(1000*60));
@@ -254,47 +255,108 @@
       return `${d}d ${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
     }
 
+    // Fungsi untuk mengonversi input datetime-local ke timestamp WITA (UTC+8)
+    function convertToWITATimestamp(dateTimeString) {
+      if (!dateTimeString) return 0;
+      
+      try {
+        // Parse tanggal dan waktu dari input (format: YYYY-MM-DDTHH:mm)
+        const [datePart, timePart] = dateTimeString.split('T');
+        const [year, month, day] = datePart.split('-').map(Number);
+        const [hours, minutes] = timePart.split(':').map(Number);
+        
+        // Buat tanggal di timezone WITA (UTC+8)
+        // JavaScript Date menggunakan UTC, jadi kita kurangi 8 jam untuk konversi
+        const utcDate = new Date(Date.UTC(year, month - 1, day, hours - 8, minutes));
+        
+        return utcDate.getTime();
+      } catch (error) {
+        console.error("Error converting time:", error);
+        return 0;
+      }
+    }
+
+    // Fungsi untuk mengonversi timestamp ke string datetime-local untuk form
+    function convertToLocalDateTimeString(timestamp) {
+      if (!timestamp || timestamp === 0) return "";
+      
+      // Tambah 8 jam untuk menyesuaikan dengan WITA
+      const date = new Date(timestamp);
+      const witaDate = new Date(date.getTime() + (8 * 60 * 60 * 1000));
+      
+      // Format ke YYYY-MM-DDTHH:mm
+      const year = witaDate.getUTCFullYear();
+      const month = String(witaDate.getUTCMonth() + 1).padStart(2, '0');
+      const day = String(witaDate.getUTCDate()).padStart(2, '0');
+      const hours = String(witaDate.getUTCHours()).padStart(2, '0');
+      const minutes = String(witaDate.getUTCMinutes()).padStart(2, '0');
+      
+      return `${year}-${month}-${day}T${hours}:${minutes}`;
+    }
+
+    // Event Listeners
     document.getElementById("adminLoginBtn").onclick = () => {
       document.getElementById("adminPanel").style.display = "block";
+      document.getElementById("username").value = "";
+      document.getElementById("password").value = "";
     };
+
     document.getElementById("loginBtn").onclick = () => {
-      if (username.value === "admin" && password.value === "admin123") {
+      const username = document.getElementById("username").value;
+      const password = document.getElementById("password").value;
+      
+      if (username === "admin" && password === "admin123") {
         document.getElementById("loginForm").classList.add("hidden");
         document.getElementById("adminControlPanel").classList.remove("hidden");
-        document.getElementById("mainTitleInput").value = settings.mainTitle;
-        document.getElementById("subTitleInput").value = settings.subTitle;
-        if (settings.startTime) {
-          document.getElementById("startTimeInput").value = new Date(settings.startTime).toISOString().slice(0, 16);
-        }
-        if (settings.endTime) {
-          document.getElementById("endTimeInput").value = new Date(settings.endTime).toISOString().slice(0, 16);
-        }
-        document.getElementById("btn1Text").value = settings.buttonTexts[0];
-        document.getElementById("btn1Link").value = settings.buttonLinks[0];
-        document.getElementById("btn2Text").value = settings.buttonTexts[1];
-        document.getElementById("btn2Link").value = settings.buttonLinks[1];
-        document.getElementById("btn3Text").value = settings.buttonTexts[2];
-        document.getElementById("btn3Link").value = settings.buttonLinks[2];
+        
+        // Isi form dengan data yang ada
+        document.getElementById("mainTitleInput").value = settings.mainTitle || "";
+        document.getElementById("subTitleInput").value = settings.subTitle || "";
+        
+        // Konversi timestamp ke string untuk form
+        document.getElementById("startTimeInput").value = convertToLocalDateTimeString(settings.startTime);
+        document.getElementById("endTimeInput").value = convertToLocalDateTimeString(settings.endTime);
+        
+        document.getElementById("btn1Text").value = settings.buttonTexts?.[0] || "";
+        document.getElementById("btn1Link").value = settings.buttonLinks?.[0] || "";
+        document.getElementById("btn2Text").value = settings.buttonTexts?.[1] || "";
+        document.getElementById("btn2Link").value = settings.buttonLinks?.[1] || "";
+        document.getElementById("btn3Text").value = settings.buttonTexts?.[2] || "";
+        document.getElementById("btn3Link").value = settings.buttonLinks?.[2] || "";
       } else {
-        alert("Login salah");
+        alert("Login salah. Username: admin, Password: admin123");
       }
     };
+
     window.closeAdmin = () => {
       document.getElementById("adminPanel").style.display = "none";
-    };
-    window.logout = () => {
       document.getElementById("loginForm").classList.remove("hidden");
       document.getElementById("adminControlPanel").classList.add("hidden");
     };
+
+    window.logout = () => {
+      document.getElementById("loginForm").classList.remove("hidden");
+      document.getElementById("adminControlPanel").classList.add("hidden");
+      document.getElementById("username").value = "";
+      document.getElementById("password").value = "";
+    };
+
     document.getElementById("saveSettingsBtn").onclick = async () => {
-      const newStart = new Date(document.getElementById("startTimeInput").value).getTime();
-      const newEnd = new Date(document.getElementById("endTimeInput").value).getTime();
+      // Konversi input ke timestamp WITA
+      const newStartTime = convertToWITATimestamp(document.getElementById("startTimeInput").value);
+      const newEndTime = convertToWITATimestamp(document.getElementById("endTimeInput").value);
+      
+      // Validasi waktu
+      if (newStartTime >= newEndTime) {
+        alert("Waktu mulai harus lebih awal dari waktu berakhir!");
+        return;
+      }
 
       const newSettings = {
         mainTitle: document.getElementById("mainTitleInput").value,
         subTitle: document.getElementById("subTitleInput").value,
-        startTime: newStart,
-        endTime: newEnd,
+        startTime: newStartTime,
+        endTime: newEndTime,
         buttonTexts: [
           document.getElementById("btn1Text").value,
           document.getElementById("btn2Text").value,
@@ -307,17 +369,39 @@
         ]
       };
 
-      if (JSON.stringify(settings) === JSON.stringify(newSettings)) {
+      // Cek apakah ada perubahan
+      const oldSettings = {
+        ...settings,
+        startTime: settings.startTime || 0,
+        endTime: settings.endTime || 0
+      };
+      
+      if (JSON.stringify(oldSettings) === JSON.stringify(newSettings)) {
         alert("Tidak ada perubahan yang disimpan.");
         return;
       }
 
-      await set(ref(db, "settings"), newSettings);
-      settings = newSettings;
-      applySettings();
-      alert("Tersimpan!");
+      try {
+        await set(ref(db, "settings"), newSettings);
+        settings = newSettings;
+        applySettings();
+        alert("Pengaturan berhasil disimpan!");
+        closeAdmin();
+      } catch (error) {
+        console.error("Error saving settings:", error);
+        alert("Gagal menyimpan pengaturan. Silakan coba lagi.");
+      }
     };
+
+    // Load settings saat halaman dimuat
     loadSettings();
+    
+    // Tambah handler untuk menutup panel admin dengan ESC
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && document.getElementById("adminPanel").style.display === "block") {
+        closeAdmin();
+      }
+    });
   </script>
 </body>
 </html>
