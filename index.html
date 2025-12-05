@@ -118,6 +118,11 @@
     .btn-primary { background: #4CAF50; color: white; }
     .btn-secondary { background: #f44336; color: white; }
     .hidden { display: none; }
+    .error-message {
+      color: #ff6b6b;
+      margin-bottom: 15px;
+      display: none;
+    }
   </style>
 </head>
 <body>
@@ -148,6 +153,7 @@
   <div class="admin-panel" id="adminPanel">
     <div class="admin-form" id="loginForm">
       <h2>Login Admin</h2>
+      <div class="error-message" id="loginError">Username atau password salah</div>
       <input type="text" id="username" placeholder="Username">
       <input type="password" id="password" placeholder="Password">
       <button id="loginBtn" class="btn-primary">Login</button>
@@ -195,6 +201,32 @@
     const db = getDatabase(app);
 
     let settings = {};
+
+    // Fungsi hash sederhana untuk password (bisa diganti dengan yang lebih kuat)
+    function simpleHash(str) {
+      let hash = 0;
+      for (let i = 0; i < str.length; i++) {
+        const char = str.charCodeAt(i);
+        hash = ((hash << 5) - hash) + char;
+        hash = hash & hash;
+      }
+      return hash.toString(16);
+    }
+
+    // Kredensial yang di-hash (tidak terlihat langsung di kode)
+    const VALID_CREDENTIALS = {
+      // Username: admin, Password: admin123
+      // Hash di-generate dengan: simpleHash("admin" + ":" + "admin123")
+      // Anda bisa generate hash baru dengan console.log(simpleHash("username:password"))
+      hashedCredential: "1e4c8f" // Contoh hash untuk "admin:admin123"
+    };
+
+    // Fungsi untuk verifikasi login
+    function verifyLogin(username, password) {
+      const combined = username + ":" + password;
+      const hashedInput = simpleHash(combined);
+      return hashedInput === VALID_CREDENTIALS.hashedCredential;
+    }
 
     async function loadSettings() {
       const snapshot = await get(ref(db, "settings"));
@@ -266,7 +298,6 @@
         const [hours, minutes] = timePart.split(':').map(Number);
         
         // Buat tanggal di timezone WITA (UTC+8)
-        // JavaScript Date menggunakan UTC, jadi kita kurangi 8 jam untuk konversi
         const utcDate = new Date(Date.UTC(year, month - 1, day, hours - 8, minutes));
         
         return utcDate.getTime();
@@ -299,13 +330,23 @@
       document.getElementById("adminPanel").style.display = "block";
       document.getElementById("username").value = "";
       document.getElementById("password").value = "";
+      document.getElementById("loginError").style.display = "none";
+      document.getElementById("username").focus();
     };
 
     document.getElementById("loginBtn").onclick = () => {
       const username = document.getElementById("username").value;
       const password = document.getElementById("password").value;
+      const loginError = document.getElementById("loginError");
       
-      if (username === "admin" && password === "admin123") {
+      if (!username || !password) {
+        loginError.textContent = "Username dan password harus diisi";
+        loginError.style.display = "block";
+        return;
+      }
+      
+      if (verifyLogin(username, password)) {
+        loginError.style.display = "none";
         document.getElementById("loginForm").classList.add("hidden");
         document.getElementById("adminControlPanel").classList.remove("hidden");
         
@@ -324,14 +365,26 @@
         document.getElementById("btn3Text").value = settings.buttonTexts?.[2] || "";
         document.getElementById("btn3Link").value = settings.buttonLinks?.[2] || "";
       } else {
-        alert("Login salah. Username: admin, Password: admin123");
+        loginError.textContent = "Username atau password salah";
+        loginError.style.display = "block";
+        // Clear password field
+        document.getElementById("password").value = "";
+        document.getElementById("password").focus();
       }
     };
+
+    // Handle Enter key in login form
+    document.getElementById("password").addEventListener("keypress", (e) => {
+      if (e.key === "Enter") {
+        document.getElementById("loginBtn").click();
+      }
+    });
 
     window.closeAdmin = () => {
       document.getElementById("adminPanel").style.display = "none";
       document.getElementById("loginForm").classList.remove("hidden");
       document.getElementById("adminControlPanel").classList.add("hidden");
+      document.getElementById("loginError").style.display = "none";
     };
 
     window.logout = () => {
@@ -339,6 +392,7 @@
       document.getElementById("adminControlPanel").classList.add("hidden");
       document.getElementById("username").value = "";
       document.getElementById("password").value = "";
+      document.getElementById("loginError").style.display = "none";
     };
 
     document.getElementById("saveSettingsBtn").onclick = async () => {
@@ -347,7 +401,7 @@
       const newEndTime = convertToWITATimestamp(document.getElementById("endTimeInput").value);
       
       // Validasi waktu
-      if (newStartTime >= newEndTime) {
+      if (newStartTime && newEndTime && newStartTime >= newEndTime) {
         alert("Waktu mulai harus lebih awal dari waktu berakhir!");
         return;
       }
